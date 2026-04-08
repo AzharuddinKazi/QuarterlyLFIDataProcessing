@@ -133,10 +133,9 @@ STAGE_SAVE      = “SAVE”         # Processing OK but Dataiku write failed
 
 @dataclass
 class SheetConfig:
-“””
+"""
 Defines everything the processor needs to know about one sheet type.
 
-```
 id_vars:    columns to preserve as identifier columns.
 value_vars: columns to melt into long format. If None, the sheet is
             transaction-level and rows are stacked as-is without melting.
@@ -150,7 +149,6 @@ value_vars:     Optional[list] = None
 var_name:       str = "metric"
 value_name:     str = "value"
 post_process:   Optional[Callable] = None
-```
 
 # One entry per sheet. This is the only place to change column definitions
 
@@ -218,11 +216,10 @@ default_factory=lambda: datetime.utcnow().isoformat()
 )
 
 class StatusTracker:
-“””
+"""
 Collects processing outcomes for every sheet across every LFI file.
 Written as a single audit table at the end of the batch run.
 
-```
 Captures three distinct failure modes:
   FILE_READ  — the Excel file itself could not be opened or parsed
   LOAD       — file OK but the specific sheet is missing or unreadable
@@ -335,7 +332,6 @@ def print_summary(self) -> None:
                 f"{row['error_message']}"
             )
     logger.info("")
-```
 
 # =============================================================================
 
@@ -344,11 +340,10 @@ def print_summary(self) -> None:
 # =============================================================================
 
 class SheetProcessor:
-“””
+"""
 Handles extraction, transformation, and incremental writing for one sheet
 type across all LFI files.
 
-```
 Uses Dataiku's streaming writer (get_writer) instead of accumulating all
 dataframes in memory. This is important for transaction-level sheets which
 can be large — each processed sheet is written immediately after extraction
@@ -549,7 +544,6 @@ def close(self, tracker: StatusTracker) -> None:
             stage          = STAGE_SAVE,
             exc            = exc,
         )
-```
 
 # =============================================================================
 
@@ -558,10 +552,9 @@ def close(self, tracker: StatusTracker) -> None:
 # =============================================================================
 
 def parse_lfi_name(file_name: str) -> str:
-“””
+"""
 Extracts the LFI code from the submitted filename.
 
-```
 Assumes LFI code is the first underscore-delimited token in uppercase.
 e.g. "FAB_Q1_2025_v2.xlsx" → "FAB"
      "ADCB.xlsx"           → "ADCB"
@@ -579,13 +572,11 @@ if lfi_code not in KNOWN_LFIS:
     )
 
 return lfi_code
-```
 
 def read_file_bytes(folder: dataiku.Folder, path: str) -> bytes:
-“””
+"""
 Reads a file from an HDFS-backed Dataiku managed folder into memory.
 
-```
 Dataiku's get_download_stream() abstracts the HDFS read — the calling
 code does not need to handle HDFS clients directly. The file is read
 into a bytes buffer once and reused across all sheet processors,
@@ -593,14 +584,13 @@ avoiding multiple HDFS reads for the same file.
 """
 with folder.get_download_stream(path) as stream:
     return stream.read()
-```
 
 def list_excel_files(folder: dataiku.Folder) -> list:
-“””
+"""
 Returns all .xlsx file paths in the managed folder.
 On HDFS-backed folders, list_paths_in_partition() traverses the
 HDFS directory tree that Dataiku manages for this folder.
-“””
+"""
 return [
 p for p in folder.list_paths_in_partition()
 if p.lower().endswith(”.xlsx”)
@@ -615,14 +605,13 @@ if p.lower().endswith(”.xlsx”)
 def run_batch(folder_name: str,
 processors: list,
 tracker: StatusTracker) -> None:
-“””
+"""
 Main batch loop. For each LFI file in the managed folder:
 1. Read the raw bytes from HDFS (once per file)
 2. Parse the Excel structure to get available sheet names
 3. Run all sheet processors against the file
 4. Log any file-level failures to the tracker
 
-```
 After all files are processed:
   5. Close all streaming writers
   6. Write the audit log
@@ -685,7 +674,6 @@ for processor in processors:
 # Write audit log and print summary
 tracker.write()
 tracker.print_summary()
-```
 
 # =============================================================================
 
